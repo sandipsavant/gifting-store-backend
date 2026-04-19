@@ -3,9 +3,12 @@ const crypto = require("crypto");
 const path = require("path");
 const Razorpay = require("razorpay");
 const fs = require("fs");
-const app = express();
-const PORT = 3001;
+const cors = require("cors"); // ✅ added
 
+const app = express();
+const PORT = process.env.PORT || 3001; // ✅ FIXED
+
+app.use(cors()); // ✅ important for frontend
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -20,6 +23,9 @@ const rzp = new Razorpay({
 });
 
 console.log("Razorpay initialized");
+
+/* ✅ File path fix */
+const filePath = path.join(__dirname, "orders.json");
 
 /* -------- Send key -------- */
 app.get("/api/config", (req, res) => {
@@ -38,7 +44,7 @@ app.post("/api/create-order", async (req, res) => {
     const order = await rzp.orders.create({
       amount: Math.round(amount * 100),
       currency: "INR",
-      receipt: "order_" + Date.now(),   // ✅ FIXED (NO BACKTICK)
+      receipt: "order_" + Date.now(),
     });
 
     res.json(order);
@@ -66,7 +72,6 @@ app.post("/api/verify-payment", (req, res) => {
 
   if (generated_signature === razorpay_signature) {
 
-    // ✅ SAVE ORDER
     const orderData = {
       name,
       phone,
@@ -79,7 +84,7 @@ app.post("/api/verify-payment", (req, res) => {
     let orders = [];
 
     try {
-      const data = fs.readFileSync("orders.json");
+      const data = fs.readFileSync(filePath, "utf-8"); // ✅ FIXED
       orders = JSON.parse(data);
     } catch (err) {
       orders = [];
@@ -87,7 +92,7 @@ app.post("/api/verify-payment", (req, res) => {
 
     orders.push(orderData);
 
-    fs.writeFileSync("orders.json", JSON.stringify(orders, null, 2));
+    fs.writeFileSync(filePath, JSON.stringify(orders, null, 2)); // ✅ FIXED
 
     res.json({ success: true });
 
@@ -96,12 +101,22 @@ app.post("/api/verify-payment", (req, res) => {
   }
 });
 
-/* -------- Serve frontend -------- */
+/* -------- GET ALL ORDERS (NEW) -------- */
+app.get("/api/orders", (req, res) => {
+  try {
+    const data = fs.readFileSync(filePath, "utf-8");
+    res.json(JSON.parse(data));
+  } catch (err) {
+    res.json([]);
+  }
+});
+
+/* -------- Serve backend check -------- */
 app.get("/", (req, res) => {
   res.send("Backend running 🚀");
 });
 
 /* -------- Start server -------- */
 app.listen(PORT, () => {
-  console.log("Server running at http://localhost:3001");
+  console.log("Server running at port " + PORT);
 });
