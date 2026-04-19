@@ -10,8 +10,8 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 /* ✅ YOUR KEYS */
-const RZP_KEY_ID = "rzp_test_SfD4yltoecr9OP";
-const RZP_KEY_SECRET = "0LRAodaSxZuOmlhDz0C8IQvy";
+const RZP_KEY_ID = process.env.RAZORPAY_KEY_ID;
+const RZP_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
 
 /* ✅ Razorpay init */
 const rzp = new Razorpay({
